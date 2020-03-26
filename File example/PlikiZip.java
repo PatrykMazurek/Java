@@ -6,85 +6,87 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class PlikiZip {
 
-    public PlikiZip() {    }
+    public PlikiZip() { }
 
-    public boolean GenerateArchivumZIP(String locationZip, String locationToZip,  String nameZIPFile){
-        try{
-            // lokalizacja gdzie zapisać archiwum ZIP
-            Path location = Paths.get(locationZip, nameZIPFile);
-            // lokalizacja z kąd brać pliki do archiwum ZIP
-            Path locationZIP = Paths.get(locationToZip);
-            FileOutputStream f;
-            if (Files.exists(location)){
-                System.out.println("Podany plik: " + location.getFileName() + " istnieje w podanej lokalizacji:");
-                System.out.println(location.getParent());
-                System.out.println("Plik zostanie nadpisany");
-                // otwarcie pliku do zapisu
-                f = new FileOutputStream(location.toString());
-            }
-            else{
-                System.out.println("Plik nie istniej, zostanie stworzony");
-                // Utworzenie pliku i otwarcie do zapisu
-                f = new FileOutputStream(location.toString());
-            }
-            // utworzenie obiektu do zapisu w archiwum ZIP
-            ZipOutputStream zout = new ZipOutputStream(f);
-            // ustawienie poziomu kompresji
-            zout.setLevel(Deflater.BEST_COMPRESSION);
-            File tempDirectory = locationZIP.toFile();
-            // pobranie wszystkich plików i folderów z wybranego katalogu
-            File[] fileList = tempDirectory.listFiles();
-            // filtracja wybranych formatów, filtrując pliki można stworzyć anonimową metodę, która będzie filtrować wybrane pliki
-//            File[] fileList = tempDirectory.listFiles(new FilenameFilter() {
-//                @Override
-//                public boolean accept(File dir, String name) {
-//                    if(name.endsWith(".txt")){
-//                        return true;
-//                    }
-//                    return false;
-//                }
-//            });
-            // przekazywanie każdego pliku do archiwum
-            for (File fl : fileList){
-                // sprawdzanie czy aktualny element jest plikiem
-                if(fl.isFile()){
-                    ZipEntry ze = new ZipEntry(fl.getName());
-                    zout.putNextEntry(ze);
-                    zout.closeEntry();
+    // tworzenie plików archiwum
+    public void GenerateArchiwumZIP(File[] files, String nameZIP, Path location){
+        try {
+            if(Files.notExists(location.resolve(nameZIP))){
+                if (files.length>0){
+                    System.out.println("Tworze archiwum ZIP");
+                    // tworzenie obirktu typu ZipOutputStream w celu zapisywania do archiwum Zip
+                    ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(location.resolve(nameZIP).toString()));
+                    for (File f : files){
+                        // zapisywanie każdego pliku do archiwum
+                        ZipEntry zipE = new ZipEntry(f.getName());
+                        // metoda putNextEntry dodaje nazwę pliku i tworzy pusty plik
+                        zipOut.putNextEntry(zipE);
+                        // odczyt wybranego pliku do zapisu w archiwum
+                        FileInputStream fileInputStream = new FileInputStream(f);
+                        System.out.println("Zapisuje do archiwum plik: " + f.getName());
+                        byte[] buffor = new byte[1024];
+                        int lenght;
+                        // zapis zawartości pliku do archiwum
+                        while ((lenght = fileInputStream.read(buffor)) >= 0){
+                            zipOut.write(buffor, 0, lenght);
+                        }
+                        // należy pamiętaćo o zamknięciu kiedy zakończymy zapisywać zawartość podjedyńczego pliku
+                        fileInputStream.close();
+                        zipOut.closeEntry();
+                    }
+                    // zamknięcie całego archiwum
+                    zipOut.close();
+                }else{
+                    System.out.println("Brak plików do zipowania");
                 }
+            } else{
+                System.out.println("Plik w podanej lokalizacji istnieje");
             }
-            zout.close();
-            return true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
         }
-
     }
 
-    public void OpenArchivumZIP(String locationZip, String locationToZip,  String nameZIPFile){
-        try{
-            // lokalizacja gdzie zapisać archiwum ZIP
-            Path location = Paths.get(locationZip, nameZIPFile);
-            // lokalizacja z kąd brać pliki do archiwum ZIP
-            Path locationZIP = Paths.get(locationToZip);
-            FileInputStream f;
-            if (Files.exists(location)){
-                System.out.println("Podany plik: " + location.getFileName() + " istnieje w podanej lokalizacji:");
-                System.out.println(location.getParent());
-                System.out.println("Plik zostanie nadpisany");
-                // otwarcie pliku do zapisu
-                f = new FileInputStream(location.toString());
+    public void ReadArchiwumZIP(File zipFile, Path toLacation) {
+        try {
+            // utworzenie obiektu zipInputStream do odczytania danych z pliku ZIP
+            ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFile));
+            // obiekt obsługujący pojedyńcze rekordy z archiwum
+            ZipEntry zipE;
+            // oczytwanie pojedyńczyć rekordów z archiwum
+            while ((zipE = zipIn.getNextEntry()) != null) {
+                // tworzenie pliku w miejscu gdzie ma byćrozpakowany
+                File newFile = new File(toLacation.toFile(), zipE.getName());
+                if (Files.exists(newFile.toPath())) {
+                    System.out.println("Plik istnieje w danej lokalizacji");
+                } else {
+                    // zapisywanie danych do pliku
+                    FileOutputStream fileOutputStream = new FileOutputStream(newFile);
+                    int lenght;
+                    byte[] buffor = new byte[1024];
+                    // odczytwanie danych z pliku i zapisywanie ich do pliku w miejscu docelowym
+                    while ((lenght = zipIn.read(buffor)) >= 0) {
+                        fileOutputStream.write(buffor, 0, lenght);
+                    }
+                    // zapisanie danych w pliku
+                    fileOutputStream.flush();
+                    fileOutputStream.close();
+                }
+                // zamknięcie pojedyńczego rekordu
+                zipIn.closeEntry();
             }
-            else{
-                System.out.println("Plik nie istniej");
-            }
-
+            // zamknięci całego archiwum
+            zipIn.close();
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

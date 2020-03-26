@@ -1,93 +1,111 @@
 package com.company;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Pliki {
 
-    public Pliki(){
-        // tworzenie ścieżki
-        // proszę wstawić swoją ścieżkę
-        Path path = Paths.get("C:\\Projekty\\java");
-        // dodawanie nowej ścieżki do istniejącej.
-        Path dir_1 = path.resolve("testy");
-        // Tworzenie ścieżki bliźniacej do lokalizacji "archiwum"
-        Path dir_2 = dir_1.resolveSibling("archiwum");
-        try{
-            // sprawdzenie czy podana ścieżka istnieje
-            if(!Files.exists(dir_1)){
-                // tworzenie nowego katalogu w podanej ścieżce
-                Files.createDirectory(dir_1);
-                System.out.println("Stworzyłem katalog: " + dir_1.getFileName());
-            }
-            // sprawdzenie czy podana ścieżka istnieje
-            if (Files.notExists(dir_2)){
-                Files.createDirectory(dir_2);
-                // tworzenie nowego katalogu w podanej ścieżce
-                System.out.println("Stworzyłem katalog: " + dir_2.getFileName());
-            }
-            // stworzenie nowego obiektu typu File wraz z lokalizacją pliku
-            File newFile = new File(dir_1 + "\\nowy_plik.txt");
-            File newFile2 = new File(dir_1 +"\\nowy_plik2.dat");
-            // Zapisywanie danych do nowego liku
-            OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(newFile));
-            osw.write("cokolwiek\n");
-            osw.write("cokolwiek 2");
-            osw.close();
-            OutputStreamWriter osw2 = new OutputStreamWriter(new FileOutputStream(newFile2));
-            osw2.write("cokolwiek\n");
-            osw2.write("cokolwiek 2");
-            osw2.close();
-            // Sprawdzenie czy istnieje plik w określonej lokalizacji
-            if (!newFile.exists()){
-                // jeżeli plik nie istnieje stwórz plik
-                Files.createFile(newFile.toPath());
-                System.out.println("Stworzyłem plik o nazwie: " + newFile.getName());
-            }else{
-                // Jeżeli plik istnieje to przenoszę do innego katalogu
-                // zastosowanie parametru StandardCopyoptions. REPLACE_EXISTING pozwala na zamianę pliku w miejscu docelowym
-                Files.move(newFile.toPath(), Paths.get(dir_2.toString(), newFile.getName() ), StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("Przeniosłem w inne miejsce");
-            }
-            // Drugra forma przenoszenia pliku
-            if(!newFile2.exists()){
-                // tworzenie pliku
-                Files.createFile(newFile2.toPath());
-                System.out.println("Stworzyłem plik o nazwie: " + newFile2.getName());
-            }else{
-                // przenoszę plik do innej lokalizacji
-                // zastosowanie parametru StandardCopyoptions. REPLACE_EXISTING pozwala na zamianę pliku w miejscu docelowym
-                Files.copy(newFile2.toPath(), Paths.get(dir_2.toString(), newFile2.getName()), StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("kopiuje plik: " + newFile2.getName());
-                // usuwam plik z obecnej lokalizacji
-                Files.delete(newFile2.toPath());
-                System.out.println("usuwam plik: " + newFile2.getName());
-            }
+    public Pliki(){}
 
-            System.out.println("Informacje o plikach:");
-            // wykonanie listy wszystkich katalogów i plkiów w danym katologu
-            String[] listFile = dir_2.toFile().list();
-            for(String d : listFile){
-                System.out.println(d);
-                Path tempPath = Paths.get(dir_2.toString(), d);
-                System.out.println("Nazwa pliku: " + tempPath.getFileName());
-                System.out.println("Katalog nardzędny: " + tempPath.getParent());
-                System.out.println("Całkowita ścieżka: " + tempPath.toFile().getPath());
-                System.out.println("Ostatnia modyfikacja: " + new Date(tempPath.toFile().lastModified()));
-                System.out.println("Czy można wykonać? " + tempPath.toFile().canExecute());
-                System.out.println("Czy można odczytać? " + tempPath.toFile().canRead());
-                System.out.println("Czy można Zapisać? " + tempPath.toFile().canWrite());
-                System.out.println("Czy plik ukryty? " + tempPath.toFile().isHidden());
+    // odnajdywanie ścieżki w której wykonywany jest program
+    public Path FindLocalization(){
+        // deklaracja pliku
+        File f = new File("temp.txt");
+        System.out.println(f.getAbsolutePath());
+        // pozyskanie ścieżki bezwzględnej do pliku
+        Path temp = f.toPath().toAbsolutePath();
+        // zerócenie tylko ścieżki do katalogu w którym znajduje się plik
+        return temp.getParent();
+    }
+
+    // wyszukiwanie wszystekich plików i katalogów w danej lokalizcji
+    public File[] GetAllFiles(Path location) throws IOException {
+        // do tabeli typu File przypisuje wyszukane obiekty z podanej lokalizacji
+        File[] temFiles = location.toFile().listFiles(new FilenameFilter() {
+            // metoda anonimowa FilenameFilter pozwala na zapisanie tylko wybranych pllików lub folderów
+            @Override
+            public boolean accept(File dir, String name) {
+                // plik zostanie dodany do listy jeżeli sepłni warunek
+                if (name.endsWith(".dat")){
+                    return true;
+                }
+                return false;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        });
+        // wyświetlenie uzyskanych rezultatów
+        for (File f : temFiles){
+            if(f.isFile()){
+                // pobranie nazwy pliku
+                System.out.println(f.getName());
+                // metoda wyświetlająca informacje o plikach
+                //GetFileInfo(f);
+            }
         }
+        return temFiles;
+    }
+
+    // metoda przenosząca pliki w inną lokalizację
+    public void MoveFile(File[] files, Path from, String to ) throws IOException {
+        // określenie lokalizacji docelowej
+        Path destLocation = from.resolve(to);
+        // sprawdzenie czy plik folder istnieje
+        if(Files.exists(destLocation)){
+            System.out.println("Katalog istnije");
+        }else{
+            System.out.println("Katalog nie istnieje");
+            // tworzenie nowego folderu
+            Files.createDirectory(destLocation);
+            System.out.println("Katalog został stworzony");
+        }
+        System.out.println(from);
+        System.out.println(destLocation);
+
+        for (File f : files){
+            // kopioweanie plików w określoną lokalizację
+            // metoda "get()" z klasy Paths tworzy ścieżkę do pliku który ma zostać skopiowany
+            // parametr StandardCopyOption.REPLACE_EXISTING powoduje że pliki zostaną zawsze zamienione w miejscu docelowym
+            Files.copy(Paths.get(f.getAbsolutePath()), destLocation.resolve(f.getName()), StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("Przenoszę plik do " + destLocation.resolve(f.getName()));
+        }
+
+        // metoda dodatkowa przenosząca pliki w miejce docelowe
+        // -----------
+//        for (File f : files){
+//            Files.move(Paths.get(f.getAbsolutePath()), destLocation.resolve(f.getName()));
+//            System.out.println("Przenoszę plik do " + destLocation.resolve(f.getName()));
+//        }
+    }
+
+    // wyświetlanie informacji o pliku
+    public void GetFileInfo(File file) {
+        System.out.println("Nazwa: " + file.getName());
+        System.out.println("Root: " + file.toPath().getRoot());
+        System.out.println("Katalog nardzędny: " + file.getParentFile());
+        System.out.println("Całkowita ścieżka: " + file.getPath());
+        System.out.println("liczba podkatalogów: " + file.toPath().getNameCount());
+        System.out.println("Wielkość (B): " + file.length());
+        System.out.println("Ostatnia modyfikacja: " +  new Date( file.lastModified()));
+        System.out.println("Czy można wykonać? " + file.canExecute());
+        System.out.println("Czy można odczytać? " + file.canRead());
+        System.out.println("Czy można Zapisać? " + file.canWrite());
+        System.out.println("Czy plik ukryty? " + file.isHidden());
+        System.out.println("Czy jest plikiem?: " + file.isFile());
+        System.out.println("Czy jest katalogiem?: " + file.isDirectory());
+
+        // dane dotyczące rozmiaru dysku / partycji
+        System.out.println("Wolna przestrzeń (B): " + file.getFreeSpace());
+        System.out.println("Używana przestrzeń (B): " + file.getUsableSpace());
+        System.out.println("Całkowita przestrzeń (B): " + file.getTotalSpace());
+
     }
 }
