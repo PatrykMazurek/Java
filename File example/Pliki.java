@@ -18,7 +18,7 @@ public class Pliki {
     public Pliki(){}
 
     // odnajdywanie ścieżki w której wykonywany jest program
-    public Path FindLocalization(){
+    public Path GetStartLocalization(){
         // deklaracja pliku
         File f = new File("temp.txt");
         System.out.println(f.getAbsolutePath());
