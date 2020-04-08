@@ -28,7 +28,7 @@ public class JSON {
     }
 
     // metoda konwertująca dane do formatu JSON
-    public JSONArray SetDateToJSON(){
+    public JSONArray SetDataToJSON(){
         // pobierani danych od użytkownika
         int index = 0; // twój numer indeks;
         Scanner input = new Scanner(System.in);

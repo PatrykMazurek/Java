@@ -55,7 +55,7 @@ public class WebPage {
     }
 
     // wysyłanie danych do serwera
-    public void SendDateToWebPage(String date, String address){
+    public void SendDataToWebPage(String date, String address){
         URL url = null;
         try {
             // tworzenie połączenia z wyznaczonym adresem
