@@ -1,12 +1,6 @@
 package com.company;
 
 import com.jcraft.jsch.*;
-import org.apache.commons.net.PrintCommandListener;
-import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPReply;
-import org.apache.commons.net.ftp.FTPSClient;
-import org.apache.commons.net.tftp.TFTPClient;
 
 import java.io.*;
 import java.nio.file.Files;
