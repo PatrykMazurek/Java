@@ -1,5 +1,9 @@
 package com.company;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -18,23 +22,16 @@ public class DBConnection {
         result = null;
     }
 
-
     public void connect(){
-        try{
-            String url = "jdbc:postgresql://localhost:5432/Test";
-            String sqliteUrl = "jdbc:sqlite:C:/Projekty/baza_test.db";
-
-            System.setProperty("jdbc.Drivers", "org.postgresql.Drivers");
-
-            Properties properties = new Properties();
-            properties.setProperty("user", "student");
-            properties.setProperty("password", "student");
-            conn = DriverManager.getConnection(url, properties);
-
+        String url = "jdbc:postgresql://localhost:5432/Test";
+        String sqliteUrl = "jdbc:sqlite:C:/Projekty/test_baza.db";
+        System.setProperty("jdbc.Drivers", "org.postgresql.Drivers");
+        try {
+            //conn = DriverManager.getConnection(sqliteUrl);
+            conn = DriverManager.getConnection(url, "student", "student");
             if(conn != null){
-                System.out.println("Nawiązano połączenie z bazą danych");
+                System.out.println("Nawiązano połączenie");
             }
-
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
@@ -45,9 +42,10 @@ public class DBConnection {
         try{
             if(!conn.isClosed()){
                 conn.close();
-                System.out.println("Połączenie zamknięte ");
+                System.out.println("Połączenie zakończone");
             }
         } catch (SQLException e) {
+            System.out.println(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -60,20 +58,24 @@ public class DBConnection {
                     "name text, " +
                     "day timestamp default now()," +
                     "primary key(id))";
-            statement.execute(sql);
+            if(!statement.execute(sql)){
+                System.out.println("Tabela dodana do bazy");
+            }
 
             sql = "create table if not exists links_visited " +
                     "(id serial, " +
                     "name text, " +
                     "day timestamp default now()," +
                     "primary key(id))";
-            int number = statement.executeUpdate(sql);
-            System.out.println("Wykonano operacji " + number);
+            if(!statement.execute(sql)){
+                System.out.println("Tabela dodana do bazy");
+            }
+
+
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-
     }
 
     public void addLinkToTempTab(String link){
@@ -81,32 +83,26 @@ public class DBConnection {
             preper = conn.prepareStatement("insert into links_temp values (default, ?)");
             preper.setString(1, link);
             int number = preper.executeUpdate();
-            if (number > 0 ){
-                System.out.println("dodano " + number + " rekordów do bazy danych ");
-            }else{
-                System.out.println("nie dodano rekordu");
-            }
+            //System.out.println("Wstawiono " + number + " rekoed");
         } catch (SQLException e) {
+            System.out.println(e.getMessage());
             e.printStackTrace();
         }
     }
 
-    public void addLinkToVisitiedTab(String link){
+    public void addLinkToVisitedTab(String link){
         try {
             preper = conn.prepareStatement("insert into links_visited values (default, ?)");
             preper.setString(1, link);
             int number = preper.executeUpdate();
-            if (number > 0 ){
-                System.out.println("dodano " + number + " rekordów do bazy danych ");
-            }else{
-                System.out.println("nie dodano rekordu");
-            }
+            System.out.println("Wstawiono " + number + " rekoed");
         } catch (SQLException e) {
+            System.out.println(e.getMessage());
             e.printStackTrace();
         }
     }
 
-    public int getSizeTemTab(){
+    public int getTempTabSize(){
         try {
             statement = conn.createStatement();
             String sql = "select count(*) from links_temp";
@@ -115,49 +111,51 @@ public class DBConnection {
             while (result.next()){
                 number = result.getInt(1);
             }
-
             return number;
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
             return 0;
         }
-
     }
 
     public String getLinkToVisit(){
         try {
-            preper = conn.prepareStatement("select * from links_temp limit 3");
+
+            preper = conn.prepareStatement("select name from links_temp limit 3");
             result = preper.executeQuery();
 
-            ArrayList<String> temlList = new ArrayList<>();
-
+            ArrayList<String> tempLink = new ArrayList<>();
             while (result.next()){
-                temlList.add(result.getString("name"));
+                tempLink.add(result.getString("name"));
             }
 
-            for(int i = 0; i<temlList.size();i++){
-                preper = conn.prepareStatement("select name from links_visited " +
-                        "where name = ?");
-                preper.setString(1, temlList.get(i));
-
+            for (int i = 0; i < tempLink.size(); i++){
+                preper = conn.prepareStatement("select name from links_visited where name = ?",
+                        ResultSet.TYPE_SCROLL_SENSITIVE,
+                        ResultSet.CONCUR_READ_ONLY);
+                preper.setString(1, tempLink.get(i));
                 result = preper.executeQuery();
-                int number = 0;
-                while (result.next()){
-                    number ++;
-                }
-                System.out.println(number + " " + temlList.get(i));
-                if ( number > 0 ){
-                    // link był odwiedzony usuń go z tabeli links_temp
+
+                result.last();
+                int number = result.getRow();
+                System.out.println(number);
+                if(number > 0 ){
+                    preper = conn.prepareStatement("delete from links_temp where name = ?");
+                    preper.setString(1, tempLink.get(i));
+                    int delRow = preper.executeUpdate();
+                    System.out.println("Z tabeli links_temp usunięto podobnych rekordów: "+ delRow);
                 }else{
-                    return temlList.get(i);
+                    return tempLink.get(i);
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         return "";
     }
+
 }
 
 
