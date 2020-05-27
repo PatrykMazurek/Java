@@ -14,6 +14,8 @@ public class DBConnection {
     private Statement statement;
     private PreparedStatement preper;
     private ResultSet result;
+	private String database = "sqlite";
+    //private String database = "postgresql";
 
     public DBConnection(){
         conn = null;
@@ -23,14 +25,21 @@ public class DBConnection {
     }
 
     public void connect(){
-        String url = "jdbc:postgresql://localhost:5432/Test";
-        String sqliteUrl = "jdbc:sqlite:C:/Projekty/test_baza.db";
-        System.setProperty("jdbc.Drivers", "org.postgresql.Drivers");
-        try {
-            //conn = DriverManager.getConnection(sqliteUrl);
-            conn = DriverManager.getConnection(url, "student", "student");
-            if(conn != null){
-                System.out.println("Nawiązano połączenie");
+        String url = "";
+        try{
+            if (database.equals("sqlite")){
+                url = "jdbc:sqlite:"; // uzupełnić swoją loklizację bazy danych 
+                conn = DriverManager.getConnection(url);
+                if(conn != null){
+                    System.out.println("Nawiązano połączenie");
+                }
+            }else{
+                url = "jdbc:postgresql://localhost:5432/Test";
+                System.setProperty("jdbc.Drivers", "org.postgresql.Drivers");
+                conn = DriverManager.getConnection(url, "student", "student");
+                if(conn != null){
+                    System.out.println("Nawiązano połączenie");
+                }
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -53,25 +62,56 @@ public class DBConnection {
     public void createTable(){
         try {
             statement = conn.createStatement();
-            String sql = "create table if not exists links_temp " +
-                    "(id serial, " +
-                    "name text, " +
-                    "day timestamp default now()," +
-                    "primary key(id))";
-            if(!statement.execute(sql)){
-                System.out.println("Tabela dodana do bazy");
+            String sql = "";
+            if (database.equals("sqlite")){
+                //uzupełnićtworzenie bazy pod SQLite;
+                sql = "create table if not exists links_temp " +
+                        "(id integer primary key autoincrement, " +
+                        "name text, " +
+                        "day timestamp default CURRENT_TIMESTAMP)";
+                if(!statement.execute(sql)){
+                    System.out.println("Tabela dodana do bazy");
+                }
+                sql = "create table if not exists links_visited " +
+                        "(id integer primary key autoincrement, " +
+                        "name text, " +
+                        "day timestamp default CURRENT_TIMESTAMP)";
+                if(!statement.execute(sql)){
+                    System.out.println("Tabela dodana do bazy");
+                }
+                sql = "create table if not exists links_unsupported " +
+                        "(id integer primary key autoincrement, " +
+                        "name text, " +
+                        "day timestamp default CURRENT_TIMESTAMP)";
+                if(!statement.execute(sql)){
+                    System.out.println("Tabela dodana do bazy");
+                }
+            }else{
+                sql = "create table if not exists links_temp " +
+                        "(id serial, " +
+                        "name text, " +
+                        "day timestamp default now()," +
+                        "primary key(id))";
+                if(!statement.execute(sql)){
+                    System.out.println("Tabela dodana do bazy");
+                }
+                sql = "create table if not exists links_visited " +
+                        "(id serial, " +
+                        "name text, " +
+                        "day timestamp default now()," +
+                        "primary key(id))";
+                if(!statement.execute(sql)){
+                    System.out.println("Tabela dodana do bazy");
+                }
+                sql = "create table if not exists links_unsupported " +
+                        "(id serial, " +
+                        "name text, " +
+                        "day timestamp default now()," +
+                        "primary key(id))";
+                if(!statement.execute(sql)){
+                    System.out.println("Tabela dodana do bazy");
+                }
             }
-
-            sql = "create table if not exists links_visited " +
-                    "(id serial, " +
-                    "name text, " +
-                    "day timestamp default now()," +
-                    "primary key(id))";
-            if(!statement.execute(sql)){
-                System.out.println("Tabela dodana do bazy");
-            }
-
-
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
@@ -80,7 +120,11 @@ public class DBConnection {
 
     public void addLinkToTempTab(String link){
         try {
-            preper = conn.prepareStatement("insert into links_temp values (default, ?)");
+			if(database.equals("sqlite")){
+                preper = conn.prepareStatement("insert into links_temp (name) values (?)");
+            }else{
+                preper = conn.prepareStatement("insert into links_temp values (default, ?)");
+            }
             preper.setString(1, link);
             int number = preper.executeUpdate();
             //System.out.println("Wstawiono " + number + " rekoed");
@@ -92,7 +136,11 @@ public class DBConnection {
 
     public void addLinkToVisitedTab(String link){
         try {
-            preper = conn.prepareStatement("insert into links_visited values (default, ?)");
+            if(database.equals("sqlite")){
+                preper = conn.prepareStatement("insert into links_visited (name) values (?)");
+            }else{
+                preper = conn.prepareStatement("insert into links_visited values (default, ?)");
+            }
             preper.setString(1, link);
             int number = preper.executeUpdate();
             System.out.println("Wstawiono " + number + " rekoed");
@@ -137,9 +185,9 @@ public class DBConnection {
                 preper.setString(1, tempLink.get(i));
                 result = preper.executeQuery();
 
-                result.last();
+                result.next();
                 int number = result.getRow();
-                System.out.println(number);
+                //System.out.println(number);
                 if(number > 0 ){
                     preper = conn.prepareStatement("delete from links_temp where name = ?");
                     preper.setString(1, tempLink.get(i));
