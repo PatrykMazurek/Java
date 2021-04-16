@@ -12,99 +12,93 @@ public class Main {
 	// write your code here
 
         SearchFile sf = new SearchFile();
-        Path location = sf.GetLocalization();
-
-        location = location.resolve("zad");
+        Path location = sf.GetLocation();
         System.out.println(location);
+        Path locationFrom = location.resolve("zad");
 
-        final int[] i = {0};
-        Path finalLocation = location;
-        Thread th = new Thread(new Runnable() {
+        Thread t1 = new Thread(new Runnable() {
             @Override
             public void run() {
-                System.out.println("Wiadomość z wątka ");
-                System.out.println(Thread.currentThread().getName());
-                for (int n = 0; n<10; n++){
-                    System.out.println("nr " + i[0]);
-                    i[0]++;
-                    File[] tFile = sf.GetAllFiles(finalLocation);
-                    System.out.println("Katalog zawiera " + tFile.length + " plików");
+                System.out.println("Wiadomośćz wątka ");
+                System.out.println("Nazwa wątku " + Thread.currentThread().getName());
+                for (int i = 0; i < 10; i++){
+                    System.out.println("nr " + i);
+                    File[] listFile = sf.GetAllFiles(location.resolve("zad"));
+                    System.out.println(listFile.length);
                     try {
-                        Thread.sleep(500);
+                        Thread.sleep(1500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
             }
         });
-//        th.start();
+//        t1.start();
+//        System.out.println("Zakończenie pracy ");
 
-        Path dest = location.resolveSibling("test");
-//        System.out.println(dest);
+        Path dest = locationFrom.resolveSibling("test");
 
-//        File[] tempFile = sf.GetAllFiles(location);
-//        for (File f: tempFile) {
-//            TestRunnable tr = new TestRunnable(location, dest, f);
+//        for (File f: listFile) {
+//            TestRunnable tr = new TestRunnable(locationFrom, dest, f);
 //            Thread t2 = new Thread(tr);
 //            t2.start();
 //        }
 
+//        ExecutorService service = Executors.newFixedThreadPool(15);
         ExecutorService service = Executors.newCachedThreadPool();
         ArrayList<Future<Boolean>> futureArrayList = new ArrayList<>();
         LocalTime finishTime = LocalTime.now().plusMinutes(3);
+        getInfoAboutThread((ThreadPoolExecutor) service);
+
 
         while (finishTime.isAfter(LocalTime.now())){
-            File[] tempFile = sf.GetAllFiles(location);
-            System.out.println("liczba plików w katalogu " + tempFile.length);
 
-            if (tempFile.length > 0){
-                for (File f: tempFile) {
-                    TestCallable tc = new TestCallable(location, dest, f);
-                    futureArrayList.add( service.submit(tc) );
-//                    service.submit(new TestRunnable(location, dest, f));
-                    GetInfoAboutThread((ThreadPoolExecutor) service);
-                }
-            }
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            File[] listFile = sf.GetAllFiles(location.resolve("zad"));
+            System.out.println("liczba plików w katalogu " + listFile.length);
+            for (File f : listFile){
+//                service.submit(new TestRunnable(locationFrom, dest, f));
+
+                TestCallable tc = new TestCallable(locationFrom, dest, f);
+                futureArrayList.add( service.submit( tc ) );
             }
 
-            for (Future<Boolean> result: futureArrayList) {
+            for (Future<Boolean> result : futureArrayList) {
                 try {
-                    if (result.get(60, TimeUnit.SECONDS)) {
-                        System.out.println("Plik został przeniesiony");
+                    if (result.get(60, TimeUnit.SECONDS)){
+                        System.out.println("Przeniosłem plik");
+                        System.out.println( listFile[futureArrayList.indexOf(result)].getName() );
                     }else{
-                        System.out.println("Plik nie zostal przeniesiony");
+                        System.out.println("nie przeniosłem pliku");
+                        System.out.println( listFile[futureArrayList.indexOf(result)].getName() );
                     }
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (TimeoutException e) {
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     e.printStackTrace();
                 }
             }
             futureArrayList.clear();
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         }
-        service.shutdownNow();
+        service.shutdown();
     }
 
-    public static void GetInfoAboutThread(ThreadPoolExecutor pool){
-        if (pool.getActiveCount() > 0){
-            System.out.println("Largest executions: "
-                + pool.getLargestPoolSize());
+    public static void getInfoAboutThread(ThreadPoolExecutor pool ){
+		if (pool.getActiveCount() > 0){	
+			System.out.println("Largest executions: "
+					+ pool.getLargestPoolSize());
 			System.out.println("Maximum allowed threads: "
-                + pool.getMaximumPoolSize());
+					+ pool.getMaximumPoolSize());
 			System.out.println("Current threads in pool: "
-                + pool.getPoolSize());
+					+ pool.getPoolSize());
 			System.out.println("Currently executing threads: "
-                + pool.getActiveCount());
+					+ pool.getActiveCount());
 			System.out.println("Total number of threads(ever scheduled): "
-                + pool.getTaskCount());
-        }
-
+					+ pool.getTaskCount());
+		}
     }
 }
