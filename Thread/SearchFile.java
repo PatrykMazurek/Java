@@ -23,7 +23,7 @@ public class SearchFile {
             public boolean accept(File dir, String name) {
                 if (name.endsWith(".png")){
                     return true;
-                } else if (name.endsWith(".txt")){
+                } else if (name.endsWith(".json")){
                     return true;
                 }
                 return false;
@@ -35,7 +35,8 @@ public class SearchFile {
     public boolean MoveFile(Path location, Path dest, File file){
 
         if (Files.exists(dest)){
-			GetFileInfo(file);
+            System.out.println("Data modyfikacji: " + file.lastModified());
+            System.out.println("Możliwość odczytu: " + file.canRead());
             try {
                 Files.move(location.resolve(file.getName()), dest.resolve(file.getName()));
             } catch (IOException e) {
@@ -47,28 +48,6 @@ public class SearchFile {
             System.out.println("Katalog nie istnieje");
             return false;
         }
-
-    }
-	
-	    public void GetFileInfo(File file) {
-        System.out.println("Nazwa: " + file.getName());
-        System.out.println("Root: " + file.toPath().getRoot());
-        System.out.println("Katalog nardzędny: " + file.getParentFile());
-        System.out.println("Całkowita ścieżka: " + file.getPath());
-        System.out.println("liczba podkatalogów: " + file.toPath().getNameCount());
-        System.out.println("Wielkość (B): " + file.length());
-        System.out.println("Ostatnia modyfikacja: " +  new Date( file.lastModified()));
-        System.out.println("Czy można wykonać? " + file.canExecute());
-        System.out.println("Czy można odczytać? " + file.canRead());
-        System.out.println("Czy można Zapisać? " + file.canWrite());
-        System.out.println("Czy plik ukryty? " + file.isHidden());
-        System.out.println("Czy jest plikiem?: " + file.isFile());
-        System.out.println("Czy jest katalogiem?: " + file.isDirectory());
-
-        // dane dotyczące rozmiaru dysku / partycji
-        System.out.println("Wolna przestrzeń (B): " + file.getFreeSpace());
-        System.out.println("Używana przestrzeń (B): " + file.getUsableSpace());
-        System.out.println("Całkowita przestrzeń (B): " + file.getTotalSpace());
 
     }
 

@@ -7,8 +7,8 @@ public class UDPClient {
 
     public UDPClient(){
 
-        String hostName = "debian-server";
-        int port = 5051;
+        String hostName = "debian";
+        int port = 450;
 
         try{
             InetAddress address = InetAddress.getByName(hostName);
